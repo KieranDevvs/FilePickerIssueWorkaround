@@ -1,0 +1,62 @@
+﻿@page "/"
+@using FilePickerIssueWorkaround.Services.FileHandling;
+@using System.Text.Json;
+@using System.IO;
+
+@inject IFileSelectResultHandler _fileSelectResultHandler;
+@inject IFileSelector _fileSelector;
+
+<div class="container">
+    <div class="row mb-2">
+        <div class="col-auto">
+            <input type="text" class="form-control" @bind="_selectedFilePath" readonly />
+        </div>
+        <div class="col">
+            <button class="btn btn-primary" @onclick="_fileSelector.SelectAsync">...</button>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col">
+            <textarea class="form-control" @bind="_content" />
+        </div>
+    </div>
+    <div class="row justify-content-end">
+        <div class="col-auto">
+            <button class="btn btn-primary" disabled="@(_selectedFilePath is null)" @onclick="SaveFileAsync">Save</button>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private string? _selectedFilePath;
+    private string _content = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        _fileSelectResultHandler.SetHandler(async (sender, path) =>
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            _selectedFilePath = path;
+            _content = await File.ReadAllTextAsync(_selectedFilePath);
+
+            StateHasChanged();
+        });
+    }
+
+    private async Task SaveFileAsync()
+    {
+        if(_selectedFilePath is null)
+        {
+            return;
+        }
+
+        await File.WriteAllTextAsync(_selectedFilePath, _content);
+    }
+}
